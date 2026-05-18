@@ -32,14 +32,18 @@ def run_python(script_path, args):
 
 def run_dbt(args):
     cmd = [
-        "dbt"
+        "dbt",
+        "run",
+        "--select"
     ] + args + [
         "--target",
         get_target(),
         "--profiles-dir",
         DBT_PROJECT_FOLDER,
         "--project-dir",
-        DBT_PROJECT_FOLDER
+        DBT_PROJECT_FOLDER,
+        "--log-format",
+        "json"
     ]
 
     print("Running:", " ".join(cmd), flush=True)
