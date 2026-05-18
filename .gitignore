@@ -1,1 +1,14 @@
 .venv/
+request_log.log
+test.py
+gcp_key_dev.json
+test_output*.json
+__pycache__/
+temp_response.json
+temp_response_with_comments.json
+*.ndjson
+*_output*.txt
+gcp_key_deployer_dev.json
+logs/
+dbtProject/.user.yml
+dbtProject/target/
