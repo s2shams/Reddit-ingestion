@@ -5,4 +5,4 @@
     ]
 ) }}
 
-select 1 as test_value
+SELECT DATETIME('{{ get_last_run_date('reddit_ingestion') }}') as test_value
