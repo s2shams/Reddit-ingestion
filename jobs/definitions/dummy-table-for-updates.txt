@@ -1,1 +1,1 @@
-dbt: --select dummy_table_for_updates
+dbt: dummy_table_for_updates
