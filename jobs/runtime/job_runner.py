@@ -2,6 +2,7 @@ import sys
 import shlex
 import subprocess
 import os
+import json
 from jobs.runtime.etl_utils import send_email, get_owner_email
 DBT_PROJECT_FOLDER = "dbtProject"
 
@@ -47,7 +48,37 @@ def run_dbt(args):
     ]
 
     print("Running:", " ".join(cmd), flush=True)
-    return subprocess.run(cmd).returncode
+
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1
+    )
+
+    for line in process.stdout:
+        line = line.strip()
+
+        try:
+            event = json.loads(line)
+
+            msg = event.get("data", {}).get("msg")
+            level = event.get("info", {}).get("level", "info")
+
+            print(json.dumps({
+                "message": f"[dbt][{level}] {msg}",
+                "severity": level.upper(),
+                "dbt": event
+            }), flush=True)
+
+        except json.JSONDecodeError:
+            print(json.dumps({
+                "message": line,
+                "severity": "INFO"
+            }), flush=True)
+
+    return process.wait()
 
 def run_job(job_name, file_path):
     email = get_owner_email(job_name)
