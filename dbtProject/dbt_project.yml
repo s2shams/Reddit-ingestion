@@ -1,0 +1,12 @@
+name: "etl_framework"
+version: "1.0"
+config-version: 2
+
+profile: "etl_framework"
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+
+vars:
+  proc_status: "{{ target.project }}.common_property.processing_status"
+  raw_reddit: "{{ target.project }}.common_property.reddit_data"

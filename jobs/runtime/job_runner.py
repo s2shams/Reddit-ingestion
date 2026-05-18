@@ -1,24 +1,23 @@
 import sys
+import shlex
 import subprocess
 import os
 from jobs.runtime.etl_utils import send_email, get_owner_email
+DBT_PROJECT_FOLDER = "dbtProject"
 
 def get_target():
     return os.getenv("TARGET", "dev")
 
-def parse_line(line: str):
+def parse_line(line):
     if ":" not in line:
         raise ValueError(f"Invalid step format: {line}")
 
     prefix, rest = line.split(":", 1)
     prefix = prefix.strip().lower()
 
-    parts = rest.strip().split()
+    parts = shlex.split(rest.strip())
 
-    command = parts[0]
-    args = parts[1:] if len(parts) > 1 else []
-
-    return prefix, command, args
+    return prefix, parts
 
 def run_python(script_path, args):
     cmd = [
@@ -31,15 +30,17 @@ def run_python(script_path, args):
     print("Running:", " ".join(cmd), flush=True)
     return subprocess.run(cmd).returncode
 
-def run_dbt(model, args):
+def run_dbt(args):
     cmd = [
-        "dbt",
-        "run",
-        "--select",
-        model,
+        "dbt"
+    ] + args + [
         "--target",
-        get_target()
-    ] + args
+        get_target(),
+        "--profiles-dir",
+        DBT_PROJECT_FOLDER,
+        "--project-dir",
+        DBT_PROJECT_FOLDER
+    ]
 
     print("Running:", " ".join(cmd), flush=True)
     return subprocess.run(cmd).returncode
@@ -53,13 +54,14 @@ def run_job(job_name, file_path):
     print(f"Starting job: {job_name} | TARGET={get_target()}", flush=True)
 
     for step in steps:
-        prefix, command, args = parse_line(step)
+        prefix, args = parse_line(step)
 
         if prefix == "python":
-            exit_code = run_python(command, args)
+            command = args[0]
+            exit_code = run_python(command, args[1:0])
 
         elif prefix == "dbt":
-            exit_code = run_dbt(command, args)
+            exit_code = run_dbt(args)
 
         else:
             raise ValueError(f"Unknown step type: {prefix}")

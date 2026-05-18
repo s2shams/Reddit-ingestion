@@ -1,0 +1,19 @@
+etl_framework:
+  target: "{{ env_var('TARGET', 'dev') }}"
+
+  outputs:
+    dev:
+      type: bigquery
+      method: oauth
+      project: ingestion-dev-495504
+      dataset: analytics
+      location: US
+      threads: 1
+
+    prod:
+      type: bigquery
+      method: oauth
+      project: ingestion-prod-495504
+      dataset: analytics
+      location: US
+      threads: 1
