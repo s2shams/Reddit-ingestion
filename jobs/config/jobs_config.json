@@ -4,5 +4,6 @@
         "memory": "2Gi",
         "schedule": "0 2 * * *",
         "timeout": "6h"
-    }
+    },
+    "dummy-table-for-updates": {}
 }
