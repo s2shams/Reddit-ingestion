@@ -3,51 +3,64 @@ import logging
 import sys
 from datetime import datetime, timezone
 
-def success(self, msg, *args, **kwargs):
-    self.info(f"SUCCESS: {msg}", *args, **kwargs)
-
-def failure(self, msg, *args, **kwargs):
-    self.error(f"FAILURE: {msg}", *args, **kwargs)
-
-# Configure logging
-logging.Logger.success = success
-logging.Logger.failure = failure
-
 class JsonFormatter(logging.Formatter):
     def format(self, record):
         payload = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "severity": record.levelname,
-            "logger": record.name,
+            "event_type": "etl_log",
             "message": record.getMessage(),
-            "module": record.module,
-            "function": record.funcName,
-            "line": record.lineno,
+            "job_name": getattr(record, "job_name", None),
+            "status": getattr(record, "status", None),
         }
         if record.exc_info:
             payload["exception"] = self.formatException(record.exc_info)
         return json.dumps(payload)
 
-def get_logger(name="app", level="INFO", json_logs=True):
-    # initialize logger
-    logger = logging.getLogger(name)
-    logger.propagate = False
-    logger.setLevel(level.upper())
+class ETLLogger:
+    def __init__(self, job_name):
+        self.job_name = job_name
 
-    # remove handlers to avoid duplicate logs
-    for handler in list(logger.handlers):
-        logger.removeHandler(handler)
+        # Get the logger, set job and level
+        self._logger = logging.getLogger(job_name)
+        self._logger.setLevel(logging.INFO)
 
-    # create stream handler to output logs to stdout
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(level.upper())
+        # clear handlers since we want to ensure exactly one logger object across modules
+        self._logger.handlers.clear()
 
-    # set formatter to JSON or plain text
-    if json_logs:
-        formatter = JsonFormatter()
-    else:
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+        # add the handler
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(JsonFormatter())
+        self._logger.addHandler(handler)
 
-    return logger
+        # Do not propagate logs to parent loggers
+        self._logger.propagate = False
+    
+    def _log(self, level, message, status=None, exc_info=False):
+        self._logger.log(
+            level,
+            message,
+            extra={
+                "job_name": self.job_name,
+                "status": status
+            },
+            exc_info=exc_info
+        )
+    
+    def info(self, message):
+        self._log(logging.INFO, message)
+
+    def warning(self, message):
+        self._log(logging.WARNING, message)
+    
+    def error(self, message, exc_info=False):
+        self._log(logging.ERROR, message, exc_info=exc_info)
+    
+    def success(self, message="Job completed successfully"):
+        self._log(logging.INFO, message, status="success")
+
+    def failure(self, message="Job failed", exc_info=False):
+        self._log(logging.ERROR, message, status="failure", exc_info=exc_info)
+
+def get_logger(job_name):
+    return ETLLogger(job_name=job_name)
