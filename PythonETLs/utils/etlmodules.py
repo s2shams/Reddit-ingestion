@@ -164,7 +164,7 @@ def log_memory_usage(msg, silent=False):
 
     if not silent:
         logger.info(f"Memory usage: {msg}")
-        print(
+        logger.info(
             f"Total Memory: {total:.2f} MB | "
             f"Used Memory: {used:.2f} MB ({mem.percent:.2f}%) | "
             f"Available: {available:.2f} MB"

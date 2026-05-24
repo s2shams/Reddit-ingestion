@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 import sys
 import os
 import argparse
-
 # Set working directory
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from utils.etlmodules import (
@@ -17,7 +16,7 @@ from utils.etlmodules import (
 from utils.etllogger import get_logger
 
 # Initialize logger
-logger = get_logger('reddit_ingestion')
+logger = get_logger(job_name='reddit_ingestion')
 parser = argparse.ArgumentParser()
 query_dir = os.path.join(os.path.dirname(__file__), 'queries')
 # ------------- Common code --------------
@@ -140,7 +139,7 @@ def ingest_reddit():
         subreddit_status = True
 
     if not (subreddit_status and final_load_status):
-        logger.error(f"An error occurred while ingesting reddit between {start_time} - {end_time}. Will not be proceeding with final merge.")
+        logger.failure(f"An error occurred while ingesting reddit between {start_time} - {end_time}. Will not be proceeding with final merge.")
         exit(1)
     
     try:
@@ -154,12 +153,13 @@ def ingest_reddit():
             merge_query=True
         )
     except Exception as e:
-        logger.error("Merge statement failed. Exiting without updating processing status table")
+        logger.failure("Merge statement failed. Exiting without updating processing status table")
         exit(1)
     
     # update proc status now
     try:
         update_processing_status(INGEST_FLOW_NAME, ETLcutofftime.strftime('%Y-%m-%d %H:%M:%S'))
+        logger.success("reddit-ingestion ran sucessfully")
     except Exception as e:
         exit(1)
 
